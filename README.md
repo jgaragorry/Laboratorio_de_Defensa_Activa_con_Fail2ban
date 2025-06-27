@@ -1,17 +1,151 @@
-Este repositorio contiene una guía detallada y un conjunto de scripts para demostrar cómo implementar un sistema de defensa activo utilizando Fail2ban en un servidor Ubuntu desplegado en Azure.El objetivo es transformar un servidor con una configuración SSH estándar en un sistema que detecta y bloquea automáticamente los intentos de ataque de fuerza bruta, una de las amenazas más comunes en internet.📋 Tabla de Contenido🎯 Objetivo del Laboratorio🛠️ Requisitos Previos📂 Contenido del Repositorio🚀 Guía de Ejecución Paso a PasoFase 1: Despliegue del EntornoFase 2: Instalación del Guardián (Fail2ban)Fase 3: Simulación del Ataque de Fuerza BrutaFase 4: Verificación del BloqueoFase Final: Limpieza de Recursos📜 Código Completo de los Scripts🎯 Objetivo del LaboratorioEste laboratorio está diseñado para que los profesionales de TI y ciberseguridad puedan:Comprender el concepto de un Sistema de Prevención de Intrusiones (IPS) a nivel de host.Instalar y configurar Fail2ban de forma profesional para proteger el servicio SSH.Simular un ataque de fuerza bruta para probar la efectividad de la defensa.Verificar y gestionar las reglas y los bloqueos (baneos) de Fail2ban en tiempo real.🛠️ Requisitos PreviosAntes de comenzar, asegúrate de tener lo siguiente en tu máquina local (ej. WSL):HerramientaComando de Verificación / InstalaciónPropósitoAzure CLIaz versionPara interactuar con tu suscripción de Azure.Cliente SSHssh -VPara conectarse a la máquina virtual.jqsudo apt install jqPara procesar la salida JSON de Azure CLI.Nota Importante: Debes haber iniciado sesión en Azure CLI antes de ejecutar los scripts. Usa el comando az login.📂 Contenido del RepositorioScriptDescripción📜 create_vm.shDespliega la VM Ubuntu 24.04 estándar en Azure.🔍 verify_vm.shVerifica el estado y obtiene los detalles (IP pública) de la VM.🛡️ instalar_guardian.sh(Se ejecuta en la VM) Instala y configura Fail2ban para proteger SSH.💥 simular_ataque.sh(Se ejecuta localmente) Lanza un ataque simulado contra la VM.🧹 delete_resources.shElimina todos los recursos de Azure y espera a que el proceso finalice.🚀 Guía de Ejecución Paso a PasoFase 1: Despliegue del Entorno de LaboratorioUbicación: Tu terminal local (WSL gmt@MSI).Crear la VM: Ejecuta el script para desplegar el servidor Ubuntu en Azure. Este creará un grupo de recursos nuevo y único para este laboratorio: rg-fail2ban-lab../create_vm.sh
-Verificar y Obtener IP: Una vez que termine, ejecuta el script de verificación para obtener la dirección IP pública. Anota esta IP../verify_vm.sh
-Fase 2: Instalación del Guardián (Fail2ban)Ubicación: DENTRO de la VM de Azure.Conéctate a la VM: Usa la IP del paso anterior.ssh gmt@<TU_IP_PÚBLICA>
-Usa la contraseña Password1234!.Sube el script de instalación: Abre una segunda terminal local y usa scp para enviar el script a la VM.scp ./instalar_guardian.sh gmt@<TU_IP_PÚBLICA>:~/
-Instala Fail2ban: Vuelve a la terminal donde estás conectado a la VM y ejecuta el script.# Dentro de la VM (gmt@vm-gmt-ubuntu)
-chmod +x instalar_guardian.sh
-sudo ./instalar_guardian.sh
-Verifica el estado inicial: Comprueba que Fail2ban está activo y vigilando.# Dentro de la VM
-sudo fail2ban-client status sshd
-En este punto, la lista de IPs baneadas debería estar vacía.Fase 3: Simulación del Ataque de Fuerza BrutaUbicación: Tu terminal local (WSL gmt@MSI).Prepara el script de ataque: Asegúrate de que el script simular_ataque.sh tenga permisos de ejecución.chmod +x simular_ataque.sh
-Lanza el ataque: Ejecuta el script pasándole la IP de tu VM como argumento../simular_ataque.sh <TU_IP_PÚBLICA>
-Verás en tu terminal cómo se realizan 5 intentos de conexión fallidos. Los primeros deberían fallar por contraseña, y los últimos deberían ser rechazados directamente por el firewall.Fase 4: Verificación del Bloqueo en Tiempo RealUbicación: DENTRO de la VM de Azure.Comprueba el estado de nuevo: En tu sesión SSH con la VM, vuelve a ejecutar el comando de estado.sudo fail2ban-client status sshd
-Resultado Esperado: ¡Ahora verás tu propia IP pública en la "Banned IP list"! Has demostrado que el guardián detectó y bloqueó al atacante.Intenta conectar de nuevo (opcional): Si abres otra terminal local e intentas conectarte (ssh gmt@<TU_IP_PÚBLICA>), la conexión será rechazada con un error de Connection timed out o Connection refused, probando que el bloqueo es efectivo.Fase Final: Limpieza del EntornoUbicación: Tu terminal local (WSL gmt@MSI).Cuando hayas terminado el laboratorio, ejecuta este script para eliminar todos los recursos de Azure y evitar costos. El script esperará a que el proceso termine antes de devolverte el prompt../delete_resources.sh
-📜 Código Completo de los Scriptscreate_vm.sh#!/bin/bash
+<div align="center">
+  <img src="https://placehold.co/600x200/1e293b/ffffff?text=Laboratorio+de+Defensa+Activa+con+Fail2ban" alt="Banner del Laboratorio de Defensa Activa con Fail2ban">
+</div>
+
+<h1 align="center">Laboratorio Práctico: Defensa Activa contra Fuerza Bruta con Fail2ban</h1>
+
+Este repositorio contiene una guía detallada y un conjunto de scripts para demostrar cómo implementar un sistema de defensa activo utilizando **Fail2ban** en un servidor Ubuntu desplegado en Azure.
+
+El objetivo es transformar un servidor con una configuración SSH estándar en un sistema que detecta y bloquea automáticamente los intentos de ataque de fuerza bruta, una de las amenazas más comunes en internet.
+
+---
+
+## 📋 Tabla de Contenido
+
+- [🎯 **Objetivo del Laboratorio**](#-objetivo-del-laboratorio)
+- [🛠️ **Requisitos Previos**](#-requisitos-previos)
+- [📂 **Contenido del Repositorio**](#-contenido-del-repositorio)
+- [🚀 **Guía de Ejecución Paso a Paso**](#-guía-de-ejecución-paso-a-paso)
+  - [Fase 1: Despliegue del Entorno](#fase-1-despliegue-del-entorno-de-laboratorio)
+  - [Fase 2: Instalación del Guardián (Fail2ban)](#fase-2-instalación-del-guardián-fail2ban)
+  - [Fase 3: Simulación del Ataque de Fuerza Bruta](#fase-3-simulación-del-ataque-de-fuerza-bruta)
+  - [Fase 4: Verificación del Bloqueo](#fase-4-verificación-del-bloqueo-en-tiempo-real)
+  - [Fase Final: Limpieza de Recursos](#fase-final-limpieza-del-entorno)
+- [📜 **Código Completo de los Scripts**](#-código-completo-de-los-scripts)
+
+---
+
+## 🎯 Objetivo del Laboratorio
+
+Este laboratorio está diseñado para que los profesionales de TI y ciberseguridad puedan:
+
+- **Comprender** el concepto de un Sistema de Prevención de Intrusiones (IPS) a nivel de host.
+- **Instalar y configurar** Fail2ban de forma profesional para proteger el servicio SSH.
+- **Simular** un ataque de fuerza bruta para probar la efectividad de la defensa.
+- **Verificar y gestionar** las reglas y los bloqueos (baneos) de Fail2ban en tiempo real.
+
+---
+
+## 🛠️ Requisitos Previos
+
+Antes de comenzar, asegúrate de tener lo siguiente en tu máquina local (ej. WSL):
+
+| Herramienta | Comando de Verificación / Instalación | Propósito |
+| :--- | :--- | :--- |
+| **Azure CLI** | `az version` | Para interactuar con tu suscripción de Azure. |
+| **Cliente SSH** | `ssh -V` | Para conectarse a la máquina virtual. |
+| **`jq`** | `sudo apt install jq` | Para procesar la salida JSON de Azure CLI. |
+
+> **Nota Importante:** Debes haber iniciado sesión en Azure CLI antes de ejecutar los scripts. Usa el comando `az login`.
+
+---
+
+## 📂 Contenido del Repositorio
+
+| Script | Descripción |
+| :--- | :--- |
+| 📜 `create_vm.sh` | Despliega la VM Ubuntu 24.04 estándar en Azure. |
+| 🔍 `verify_vm.sh` | Verifica el estado y obtiene los detalles (IP pública) de la VM. |
+| 🛡️ `instalar_guardian.sh` | **(Se ejecuta en la VM)** Instala y configura Fail2ban para proteger SSH. |
+| 💥 `simular_ataque.sh` | **(Se ejecuta localmente)** Lanza un ataque simulado contra la VM. |
+| 🧹 `delete_resources.sh` | Elimina todos los recursos de Azure y espera a que el proceso finalice. |
+
+---
+
+## 🚀 Guía de Ejecución Paso a Paso
+
+### **Fase 1: Despliegue del Entorno de Laboratorio**
+
+**Ubicación:** Tu terminal local (WSL `gmt@MSI`).
+
+1.  **Crear la VM:** Ejecuta el script para desplegar el servidor Ubuntu en Azure. Este creará un grupo de recursos nuevo y único para este laboratorio: `rg-fail2ban-lab`.
+    ```bash
+    ./create_vm.sh
+    ```
+2.  **Verificar y Obtener IP:** Una vez que termine, ejecuta el script de verificación para obtener la dirección IP pública. **Anota esta IP**.
+    ```bash
+    ./verify_vm.sh
+    ```
+
+### **Fase 2: Instalación del Guardián (Fail2ban)**
+
+**Ubicación:** DENTRO de la VM de Azure.
+
+1.  **Conéctate a la VM:** Usa la IP del paso anterior.
+    ```bash
+    ssh gmt@<TU_IP_PÚBLICA>
+    ```
+    *Usa la contraseña `Password1234!`.*
+
+2.  **Sube el script de instalación:** Abre una **segunda terminal local** y usa `scp` para enviar el script a la VM.
+    ```bash
+    scp ./instalar_guardian.sh gmt@<TU_IP_PÚBLICA>:~/
+    ```
+3.  **Instala Fail2ban:** Vuelve a la terminal donde estás conectado a la VM y ejecuta el script.
+    ```bash
+    # Dentro de la VM (gmt@vm-gmt-ubuntu)
+    chmod +x instalar_guardian.sh
+    sudo ./instalar_guardian.sh
+    ```
+4.  **Verifica el estado inicial:** Comprueba que Fail2ban está activo y vigilando.
+    ```bash
+    # Dentro de la VM
+    sudo fail2ban-client status sshd
+    ```
+    *En este punto, la lista de IPs baneadas debería estar vacía.*
+
+### **Fase 3: Simulación del Ataque de Fuerza Bruta**
+
+**Ubicación:** Tu terminal local (WSL `gmt@MSI`).
+
+1.  **Prepara el script de ataque:** Asegúrate de que el script `simular_ataque.sh` tenga permisos de ejecución.
+    ```bash
+    chmod +x simular_ataque.sh
+    ```
+2.  **Lanza el ataque:** Ejecuta el script pasándole la IP de tu VM como argumento.
+    ```bash
+    ./simular_ataque.sh <TU_IP_PÚBLICA>
+    ```
+    *Verás en tu terminal cómo se realizan 5 intentos de conexión fallidos. Los primeros deberían fallar por contraseña, y los últimos deberían ser rechazados directamente por el firewall.*
+
+### **Fase 4: Verificación del Bloqueo en Tiempo Real**
+
+**Ubicación:** DENTRO de la VM de Azure.
+
+1.  **Comprueba el estado de nuevo:** En tu sesión SSH con la VM, vuelve a ejecutar el comando de estado.
+    ```bash
+    sudo fail2ban-client status sshd
+    ```
+    > **Resultado Esperado:** ¡Ahora verás tu propia IP pública en la "Banned IP list"! Has demostrado que el guardián detectó y bloqueó al atacante.
+
+2.  **Intenta conectar de nuevo (opcional):** Si abres otra terminal local e intentas conectarte (`ssh gmt@<TU_IP_PÚBLICA>`), la conexión será rechazada con un error de `Connection timed out` o `Connection refused`, probando que el bloqueo es efectivo.
+
+### **Fase Final: Limpieza del Entorno**
+
+**Ubicación:** Tu terminal local (WSL `gmt@MSI`).
+
+1.  Cuando hayas terminado el laboratorio, ejecuta este script para eliminar todos los recursos de Azure y evitar costos. El script esperará a que el proceso termine antes de devolverte el prompt.
+    ```bash
+    ./delete_resources.sh
+    ```
+
+---
+
+## 📜 Código Completo de los Scripts
+
+### `create_vm.sh`
+```bash
+#!/bin/bash
 RESOURCE_GROUP_NAME="rg-fail2ban-lab"
 VM_NAME="vm-fail2ban-target"
 LOCATION="eastus"
@@ -45,7 +179,11 @@ if [ $? -ne 0 ]; then
 fi
 echo ""
 echo "¡Despliegue completado! Ejecuta ./verify_vm.sh para obtener los detalles."
-verify_vm.sh#!/bin/bash
+```
+
+### `verify_vm.sh`
+```bash
+#!/bin/bash
 RESOURCE_GROUP_NAME="rg-fail2ban-lab"
 VM_NAME="vm-fail2ban-target"
 echo "=================================================="
@@ -72,7 +210,11 @@ if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "null" ]; then
     echo "ssh gmt@$PUBLIC_IP"
 fi
 echo "=================================================="
-instalar_guardian.sh#!/bin/bash
+```
+
+### `instalar_guardian.sh`
+```bash
+#!/bin/bash
 # Script para instalar y configurar Fail2ban para proteger el puerto SSH 22.
 
 echo "--- Instalando y configurando Fail2ban (El Guardián Automatizado) ---"
@@ -99,7 +241,11 @@ sudo systemctl enable fail2ban
 echo ""
 echo "--- ¡Guardián Instalado y Activo! ---"
 echo "Fail2ban está ahora monitoreando el puerto 22."
-simular_ataque.sh#!/bin/bash
+```
+
+### `simular_ataque.sh`
+```bash
+#!/bin/bash
 # Script para simular un ataque de fuerza bruta a SSH
 
 TARGET_IP="$1"
@@ -133,7 +279,11 @@ done
 echo "--------------------------------------------------------"
 echo "Simulación completada."
 echo "Verifica el estado de Fail2ban en la VM. Deberías ver tu IP baneada."
-delete_resources.sh#!/bin/bash
+```
+
+### `delete_resources.sh`
+```bash
+#!/bin/bash
 RESOURCE_GROUP_NAME="rg-fail2ban-lab"
 echo "=================================================="
 echo "¡ADVERTENCIA! Estás a punto de eliminar el grupo de recursos '$RESOURCE_GROUP_NAME'."
